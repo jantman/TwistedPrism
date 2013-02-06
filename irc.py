@@ -8,6 +8,8 @@ class IRCBot(irc.IRCClient):
     
     usage_message = None
 
+    MAX_COMMAND_LENGTH = 512
+
     def _get_appname(self):
         return self.factory.APP_NAME
     versionName = property(_get_appname)
@@ -105,6 +107,44 @@ class IRCBot(irc.IRCClient):
 
     def irc_PING(self, prefix, params):
         print "IRC ping. prefix: %s params %s" % (prefix, params)
+
+    def msg(self, user, message, length=MAX_COMMAND_LENGTH):
+        """
+        Send a message to a user or channel.
+
+        The message will be split into multiple commands to the server if:
+         - The message contains any newline characters
+         - Any span between newline characters is longer than the given
+           line-length.
+
+        @param user: The username or channel name to which to direct the
+            message.
+        @type user: C{str}
+
+        @param message: The text to send.
+        @type message: C{str}
+
+        @param length: The maximum number of octets to send in a single
+            command, including the IRC protocol framing. If not supplied,
+            defaults to L{MAX_COMMAND_LENGTH}.
+        @type length: C{int}
+        """
+        fmt = "PRIVMSG %s :%%s" % (user,)
+
+        if self.factory.GLOBAL_CONF['logging']['verbosity'] >= tpl.L_DEBUG:
+            print "IRCBot.msg(%s, %s) called.\n" % (user, message)
+
+        if length is None:
+            length = MAX_COMMAND_LENGTH
+
+        # NOTE: minimumLength really equals len(fmt) - 2 (for '%s') + 2
+        # (for the line-terminating CRLF)
+        minimumLength = len(fmt)
+        if length <= minimumLength:
+            raise ValueError("Maximum length must exceed %d for message "
+                             "to %s" % (minimumLength, user))
+        for line in self.split(message, length - minimumLength):
+            self.sendLine(fmt % (line,))
 
 class IRCBotFactory(protocol.ClientFactory):
     protocol = IRCBot
