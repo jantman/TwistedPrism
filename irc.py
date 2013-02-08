@@ -108,43 +108,22 @@ class IRCBot(irc.IRCClient):
     def irc_PING(self, prefix, params):
         print "IRC ping. prefix: %s params %s" % (prefix, params)
 
-    def msg(self, user, message, length=MAX_COMMAND_LENGTH):
-        """
-        Send a message to a user or channel.
-
-        The message will be split into multiple commands to the server if:
-         - The message contains any newline characters
-         - Any span between newline characters is longer than the given
-           line-length.
-
-        @param user: The username or channel name to which to direct the
-            message.
-        @type user: C{str}
-
-        @param message: The text to send.
-        @type message: C{str}
-
-        @param length: The maximum number of octets to send in a single
-            command, including the IRC protocol framing. If not supplied,
-            defaults to L{MAX_COMMAND_LENGTH}.
-        @type length: C{int}
-        """
-        fmt = "PRIVMSG %s :%%s" % (user,)
-
+    """
+    Override inherited method to log when we send a message. Then call parent method.
+    """
+    def msg(self, user, message, length=0):
         if self.factory.GLOBAL_CONF['logging']['verbosity'] >= tpl.L_DEBUG:
             print "IRCBot.msg(%s, %s) called.\n" % (user, message)
+        if length == 0:
+            irc.IRCClient.msg(self, user, message)
+        else:
+            irc.IRCClient.msg(self, user, message, length)
 
-        if length is None:
-            length = MAX_COMMAND_LENGTH
+    """
+    Override inherited parent method, log heartbeat, then call parent method.
+    """
+    
 
-        # NOTE: minimumLength really equals len(fmt) - 2 (for '%s') + 2
-        # (for the line-terminating CRLF)
-        minimumLength = len(fmt)
-        if length <= minimumLength:
-            raise ValueError("Maximum length must exceed %d for message "
-                             "to %s" % (minimumLength, user))
-        for line in self.split(message, length - minimumLength):
-            self.sendLine(fmt % (line,))
 
 class IRCBotFactory(protocol.ClientFactory):
     protocol = IRCBot
