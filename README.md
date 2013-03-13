@@ -92,7 +92,8 @@ The daemon is configured by a simple YAML file.
       * 2 - verbose logging. Log major events in program flow.
       * 3 - debug logging. log everything. and we mean everything.
 * __irc__: configuration for IRC servers
-   * __<Name>__: _string_, configuration for one server, called "Name"
+   * __NAME__: _string_, configuration for one server, called "NAME" _(NAME
+     only used internally)_
       * __server__: _string_, hostname or IP of IRC server
       * __port__: _integer_, server port number
       * __ssl__: _boolean_, True or False, whether or not to use SSL.
